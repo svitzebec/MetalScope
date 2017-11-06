@@ -51,10 +51,14 @@ internal final class StereoRenderer {
         )
         eyeTextureDescriptor.usage = .renderTarget
 
-        eyeRenderingConfigurations = [
-            .left: EyeRenderingConfiguration(texture: device.makeTexture(descriptor: eyeTextureDescriptor)),
-            .right: EyeRenderingConfiguration(texture: device.makeTexture(descriptor: eyeTextureDescriptor))
-        ]
+        if let leftTexture = device.makeTexture(descriptor: eyeTextureDescriptor), let rightTexture = device.makeTexture(descriptor: eyeTextureDescriptor) {
+            eyeRenderingConfigurations = [
+                .left: EyeRenderingConfiguration(texture: leftTexture),
+                .right: EyeRenderingConfiguration(texture: rightTexture)
+            ]
+        } else {
+            eyeRenderingConfigurations = [:]
+        }
     }
 
     func pointOfView(for eye: Eye) -> SCNNode? {
@@ -75,7 +79,9 @@ internal final class StereoRenderer {
         for (eye, configuration) in eyeRenderingConfigurations {
             semaphore.wait()
 
-            let commandBuffer = commandQueue.makeCommandBuffer()
+            guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+                return
+            }
 
             rendererDelegateProxy.currentRenderingEye = eye
 
@@ -99,7 +105,9 @@ internal final class StereoRenderer {
                 destinationOrigin = MTLOrigin(x: outputTexture.width / 2, y: 0, z: 0)
             }
 
-            let blitCommandEncoder = commandBuffer.makeBlitCommandEncoder()
+            guard let blitCommandEncoder = commandBuffer.makeBlitCommandEncoder() else {
+                return
+            }
             blitCommandEncoder.copy(
                 from: texture,
                 sourceSlice: 0,

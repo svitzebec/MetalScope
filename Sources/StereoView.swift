@@ -123,9 +123,10 @@ public final class StereoView: UIView, SceneLoadable {
     }
 
     public convenience init(device: MTLDevice, maximumTextureSize: CGSize? = nil) {
+        
         let nativeScreenSize = UIScreen.main.nativeLandscapeBounds.size
         var textureSize = nativeScreenSize
-
+        
         if let maxSize = maximumTextureSize {
             let nRatio = nativeScreenSize.width / nativeScreenSize.height
             let mRatio = maxSize.width / maxSize.height
@@ -137,16 +138,19 @@ public final class StereoView: UIView, SceneLoadable {
                 textureSize.height = maxSize.height
             }
         }
-
+        
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm_srgb,
             width: Int(textureSize.width),
             height: Int(textureSize.height),
             mipmapped: true
         )
-        let texture = device.makeTexture(descriptor: textureDescriptor)
-
-        self.init(stereoTexture: texture)
+        
+        if let texture = device.makeTexture(descriptor: textureDescriptor) {
+            self.init(stereoTexture: texture)
+        } else {
+            self.init(device: device)
+        }
 
         let sceneScale = textureSize.width / (bounds.width * UIScreen.main.scale)
         scnView.transform = CGAffineTransform(scaleX: sceneScale, y: sceneScale)
